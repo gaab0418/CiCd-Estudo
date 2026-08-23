@@ -16,8 +16,10 @@ jobs:
       - name: Checkout do código
         uses: actions/checkout@v4
 
-      - name: Confere se .env.production existe
-        run: test -f .env.production || (echo "Falta .env.production na máquina do runner. Veja o README." && exit 1)
+      - name: Copiar .env.production da pasta de segredos
+        run: |
+          test -f ~/deploy-secrets/cicd-estudo/.env.production || (echo "Falta ~/deploy-secrets/cicd-estudo/.env.production na máquina do runner. Veja o README." && exit 1)
+          cp ~/deploy-secrets/cicd-estudo/.env.production .env.production
 
       - name: Build + sobe os containers de produção
         run: docker compose --env-file .env.production -p cicd-estudo-main up -d --build

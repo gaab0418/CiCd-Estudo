@@ -135,17 +135,21 @@ gerado uma vez (frontend buildado) = `ARG`/build-time, precisa rebuild pra refle
    sudo ./svc.sh install
    sudo ./svc.sh start
    ```
-5. **Antes do primeiro push pras branches `staging`/`main`**, crie manualmente os arquivos de
-   ambiente na pasta de trabalho do runner (algo como
-   `~/actions-runner/_work/CiCd-Estudo/CiCd-Estudo/`, o mesmo diretório onde o `checkout` vai
-   colocar o código a cada execução):
+5. **Antes do primeiro push pras branches `staging`/`main`**, crie os arquivos de ambiente numa
+   pasta **fora** do que o runner gerencia — isso importa, veja o porquê logo abaixo:
    ```bash
-   cp .env.staging.example .env.staging   # edite os valores se precisar
-   cp .env.production.example .env.production
+   mkdir -p ~/deploy-secrets/cicd-estudo
+   cd ~/deploy-secrets/cicd-estudo
+   cp /caminho/do/repo/.env.staging.example .env.staging       # edite os valores se precisar
+   cp /caminho/do/repo/.env.production.example .env.production
    ```
-   Esses arquivos nunca vêm do `git checkout` (estão no `.gitignore` de propósito — são segredo
-   de cada máquina, não do repositório). Se o workflow falhar reclamando que o arquivo não
-   existe, é isso.
+
+   **Por que fora, e não dentro de `_work/CiCd-Estudo/CiCd-Estudo/`:** o `actions/checkout`
+   roda `git clean -ffdx` antes de baixar o código a cada execução — isso apaga todo arquivo não
+   rastreado pelo git da pasta de trabalho, **inclusive os que estão no `.gitignore`**. Se você
+   colocar o `.env.staging` direto ali, ele desaparece no próximo push. Por isso os workflows têm
+   um step que copia de `~/deploy-secrets/cicd-estudo/` pra dentro da pasta de trabalho **depois**
+   do checkout, toda vez — a fonte de verdade nunca fica num lugar que o Git possa limpar.
 
 ## Testando o fluxo staging → main
 
