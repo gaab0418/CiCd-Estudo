@@ -17,13 +17,18 @@ jobs:
     runs-on: [self-hosted]
 
     steps:
+      # actions/checkout roda "git clean -ffdx" antes de baixar o código — isso apaga
+      # QUALQUER arquivo não rastreado pelo git, inclusive os que estão no .gitignore.
+      # Por isso o .env.staging não pode viver dentro desta pasta: ele seria apagado
+      # a cada execução. Ele mora em ~/deploy-secrets/ (fora do que o checkout gerencia)
+      # e é copiado pra cá depois do checkout, sempre do zero.
       - name: Checkout do código
         uses: actions/checkout@v4
 
-      # O .env.staging NÃO vem do checkout (está no .gitignore). Ele já precisa
-      # existir na pasta de trabalho do runner — ver README, seção "Primeira vez".
-      - name: Confere se .env.staging existe
-        run: test -f .env.staging || (echo "Falta .env.staging na máquina do runner. Veja o README." && exit 1)
+      - name: Copiar .env.staging da pasta de segredos
+        run: |
+          test -f ~/deploy-secrets/cicd-estudo/.env.staging || (echo "Falta ~/deploy-secrets/cicd-estudo/.env.staging na máquina do runner. Veja o README." && exit 1)
+          cp ~/deploy-secrets/cicd-estudo/.env.staging .env.staging
 
       - name: Build + sobe os containers de staging
         run: docker compose --env-file .env.staging -p cicd-estudo-staging up -d --build
