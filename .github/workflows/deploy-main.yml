@@ -1,0 +1,26 @@
+name: Deploy Main (Produção)
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: deploy-main
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: [self-hosted]
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Confere se .env.production existe
+        run: test -f .env.production || (echo "Falta .env.production na máquina do runner. Veja o README." && exit 1)
+
+      - name: Build + sobe os containers de produção
+        run: docker compose --env-file .env.production -p cicd-estudo-main up -d --build
+
+      - name: Remove imagens antigas não usadas (limpeza)
+        run: docker image prune -f

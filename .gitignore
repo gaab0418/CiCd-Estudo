@@ -1,0 +1,15 @@
+# Segredos / config real — nunca commitar
+.env
+.env.staging
+.env.production
+.env.local
+
+# Dependências e build
+node_modules/
+dist/
+build/
+
+# Editor / OS
+.vscode/
+.DS_Store
+*.log

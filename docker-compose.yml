@@ -1,0 +1,37 @@
+# Esse compose serve pra dev, staging e produção — o que muda entre eles é
+# QUAL .env você passa e qual "-p" (nome do projeto) você usa, não o compose em si.
+#
+#   dev (seu dia a dia):      docker compose up -d --build
+#   staging (CI, branch staging): docker compose --env-file .env.staging -p cicd-estudo-staging up -d --build
+#   main/produção (CI, branch main): docker compose --env-file .env.production -p cicd-estudo-main up -d --build
+#
+# O "-p <nome>" isola os containers/volumes/network de cada ambiente — sem isso,
+# rodar staging e main na mesma máquina um sobrescreve o outro.
+
+services:
+  backend:
+    build:
+      context: ./backend
+    container_name: backend-${APP_ENV:-dev}
+    restart: unless-stopped
+    # As vars abaixo vêm do arquivo passado em --env-file (.env, .env.staging ou .env.production).
+    # É o --env-file que decide qual arquivo alimenta esses ${...}, não precisa duplicar aqui.
+    environment:
+      PORT: 3000
+      APP_ENV: ${APP_ENV:-dev}
+    ports:
+      - '${BACKEND_PORT:-3000}:3000'
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Repetindo o aviso do Dockerfile: isso vira parte do JS compilado.
+        # Se você mudar VITE_API_URL só no .env sem rebuildar a imagem, NÃO faz efeito.
+        VITE_API_URL: ${VITE_API_URL}
+    container_name: frontend-${APP_ENV:-dev}
+    restart: unless-stopped
+    ports:
+      - '${FRONTEND_PORT:-8080}:80'
+    depends_on:
+      - backend

@@ -1,0 +1,32 @@
+name: Deploy Staging
+
+# Só dispara quando alguém dá push (ou faz merge de PR) na branch "staging"
+on:
+  push:
+    branches: [staging]
+
+# Se dois pushes chegarem rápido, cancela o deploy antigo em vez de rodar os dois juntos
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    # Isso aqui é a mágica do self-hosted runner: em vez de "ubuntu-latest" (máquina
+    # efêmera do GitHub), o job roda direto na sua VM/WSL onde o runner está registrado.
+    runs-on: [self-hosted]
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      # O .env.staging NÃO vem do checkout (está no .gitignore). Ele já precisa
+      # existir na pasta de trabalho do runner — ver README, seção "Primeira vez".
+      - name: Confere se .env.staging existe
+        run: test -f .env.staging || (echo "Falta .env.staging na máquina do runner. Veja o README." && exit 1)
+
+      - name: Build + sobe os containers de staging
+        run: docker compose --env-file .env.staging -p cicd-estudo-staging up -d --build
+
+      - name: Remove imagens antigas não usadas (limpeza)
+        run: docker image prune -f
